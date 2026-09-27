@@ -1,6 +1,4 @@
-<div align="center">
-
-# ⚡ PulseCore Observability Platform
+export const GITHUB_README_MARKDOWN = `# ⚡ PulseCore Observability Platform
 ### Ultra-Fast, Self-Hosted Time-Series Database, PromQL Engine & Alerting Hub
 *A lightweight, modern Datadog + Grafana + PagerDuty alternative engineered for high scale.*
 
@@ -10,30 +8,26 @@
 [![OTLP Compliant](https://img.shields.io/badge/OpenTelemetry-OTLP_v1-F59E0B.svg?style=for-the-badge&logo=opentelemetry&logoColor=white)](#)
 [![License](https://img.shields.io/badge/License-Apache_2.0-818CF8.svg?style=for-the-badge)](#)
 
-[Live Interactive Cockpit](https://ais-dev-sqduvvi2zzq7lnkl3hi2e7-65843126879.europe-west3.run.app) • [System Architecture](#system-architecture) • [Gorilla TSDB](#gorilla-tsdb-compression-deep-dive) • [API Specs](#api-reference) • [Quickstart](#quickstart-docker-compose)
-
-</div>
-
 ---
 
 ## 🎯 Executive Overview & Motivation
 
 Production microservice architectures demand comprehensive visibility across **Metrics**, **Logs**, and **Distributed Traces**. However, modern engineering teams face two agonizing choices:
 
-1. **The SaaS Trap:** Datadog and New Relic charge exorbitant fees based on custom metric cardinality, active hosts, and raw log volume. A single traffic spike can turn a \$1,500 monthly bill into \$20,000+ overnight.
+1. **The SaaS Trap:** Datadog and New Relic charge exorbitant fees based on custom metric cardinality, active hosts, and raw log volume. A single traffic spike can turn a $1,500 monthly bill into $20,000+ overnight.
 2. **The Prometheus Stack Hell:** Self-hosting Prometheus + Alertmanager + Grafana + Loki + Tempo + Thanos requires configuring dozens of separate YAML definitions, maintaining disparate daemons, and operating a dedicated DevOps team.
 
 **PulseCore** unifies all three observability pillars into a single high-throughput, low-footprint binary and reactive web cockpit with:
 - **Built-in Gorilla TSDB Engine:** Compresses 16-byte raw data points down to **1.37 bytes/sample** (>91% RAM & disk savings).
-- **Sub-5ms PromQL Query Engine:** In-memory LRU evaluation of multi-dimensional matrix aggregations (`rate`, `quantile`, `sum`, `window`).
-- **4-Stage Alert State Machine:** Eliminates alert fatigue via automated flapping suppression (`OK` ➔ `Pending` ➔ `Firing` ➔ `Resolved`).
+- **Sub-5ms PromQL Query Engine:** In-memory LRU evaluation of multi-dimensional matrix aggregations (\`rate\`, \`quantile\`, \`sum\`, \`window\`).
+- **4-Stage Alert State Machine:** Eliminates alert fatigue via automated flapping suppression (\`OK\` ➔ \`Pending\` ➔ \`Firing\` ➔ \`Resolved\`).
 - **Universal Ingestion Gateway:** Native wire support for Prometheus Exposition format, StatsD, OpenTelemetry (OTLP gRPC/HTTP), and structured JSON.
 
 ---
 
 ## 🏛️ High-Level System Architecture
 
-```
+\`\`\`
 +─────────────────────────────────────────────────────────────────────────────────+
 |                           TELEMETRY SOURCES & AGENTS                            |
 |    [Prometheus Exporters]     [OTLP Tracing SDKs]    [FluentBit / Vector Logs]  |
@@ -75,31 +69,31 @@ Production microservice architectures demand comprehensive visibility across **M
 | - Public SLA Status Page (99.98%)          |  | - Exponential Backoff Retries   |
 | - Interactive Microservice Topology Map    |  | - Two-Way Interactive Acknowl.  |
 +────────────────────────────────────────────+  +─────────────────────────────────+
-```
+\`\`\`
 
 ---
 
 ## 🔬 Gorilla TSDB Compression Deep Dive
 
 A raw time-series data point consists of:
-- **Timestamp:** 64-bit Unix integer (`int64` = 8 bytes)
-- **Value:** 64-bit IEEE 754 floating-point (`float64` = 8 bytes)
+- **Timestamp:** 64-bit Unix integer (\`int64\` = 8 bytes)
+- **Value:** 64-bit IEEE 754 floating-point (\`float64\` = 8 bytes)
 - **Raw Total:** **16 bytes (128 bits)** per sample.
 
 PulseCore implements the battle-tested **Facebook Gorilla Compression Algorithm**:
 
 ### 1. Timestamp Delta-of-Delta Encoding
 For regular telemetry intervals (e.g., 5 seconds):
-$$D = (t_n - t_{n-1}) - (t_{n-1} - t_{n-2})$$
-- If $D = 0$ (constant interval): PulseCore writes exactly **1 single bit `0`** to the bitstream.
-- If $-63 \le D \le 64$: Writes `10` followed by 7 bits of value (9 bits total).
-- If $-255 \le D \le 256$: Writes `110` followed by 9 bits of value (12 bits total).
+D = (t[n] - t[n-1]) - (t[n-1] - t[n-2])
+- If D = 0 (constant interval): PulseCore writes exactly **1 single bit \`0\`** to the bitstream.
+- If -63 <= D <= 64: Writes \`10\` followed by 7 bits of value (9 bits total).
+- If -255 <= D <= 256: Writes \`110\` followed by 9 bits of value (12 bits total).
 
 ### 2. Float64 Value XOR Encoding
-The current value $V_n$ is XOR'd with the previous value $V_{n-1}$:
-$$X = V_n \oplus V_{n-1}$$
-- If $X = 0$ (value unchanged): Writes **1 single bit `0`**.
-- If $X \neq 0$: Writes bit `1`, detects leading and trailing zeroes, and encodes only the variable meaningful bits.
+The current value V[n] is XOR'd with the previous value V[n-1]:
+X = V[n] ^ V[n-1]
+- If X = 0 (value unchanged): Writes **1 single bit \`0\`**.
+- If X != 0: Writes bit \`1\`, detects leading and trailing zeroes, and encodes only the variable meaningful bits.
 
 ### Results
 | Metric | Raw Ingestion | PulseCore Gorilla TSDB | Space Savings |
@@ -112,7 +106,7 @@ $$X = V_n \oplus V_{n-1}$$
 
 ## ⚡ Alert State Machine & Anti-Flapping Engine
 
-```
+\`\`\`
        +-------------------------------------------------------+
        |                     HEALTHY (OK)                      |<-----------------------+
        |      Metric value remains within safe threshold       |                        |
@@ -139,88 +133,27 @@ $$X = V_n \oplus V_{n-1}$$
                 +------------>|             RESOLVED STATE             |----------------+
                               |   Send auto-recovery post-incident msg |
                               +----------------------------------------+
-```
-
-### Noise Suppression Features:
-1. **Deduplication:** Hash fingerprints `sha256(rule_id + labels)` ensure duplicate notifications are suppressed within the `repeat_interval: 4h` window.
-2. **Inhibition:** If an upstream root failure fires (e.g. `ClusterDown`), downstream alerts (`ServiceLatency`, `DatabaseConnectionTimeout`) are automatically muted.
-3. **Timed Silences:** Suppress specific matchers during scheduled maintenance windows with audit tracking.
+\`\`\`
 
 ---
 
 ## 🎨 Visual Identity & Engineering Design Tokens
 
-The PulseCore user interface adheres to a strict dark NOC (Network Operations Center) aesthetic designed for high-stress production environments:
-
 | Token Name | HEX Code | Purpose & Semantic Role |
 | :--- | :--- | :--- |
-| `--canvas-dark` | `#090D16` | Deep obsidian backdrop; minimizes OLED eye strain |
-| `--panel-surface` | `#0B0F19` | Frosted glass card surface with `rgba(30, 41, 59, 0.8)` borders |
-| `--alert-crimson` | `#EF4444` | High-visibility neon red with radar pulse animation for Critical alerts |
-| `--warning-amber` | `#F59E0B` | Warm amber for approaching thresholds and pending evaluations |
-| `--success-emerald` | `#10B981` | Vibrant emerald for 99.98% SLA and healthy status indicators |
-| `--brand-indigo` | `#6366F1` | Primary telemetry line chart curves and focus states |
-| `--trace-cyan` | `#06B6D4` | Microsecond OTLP span bars and waterfall timelines |
-
-**Typography:** `JetBrains Mono` for PromQL formulas, status codes, and bitstream inspect; `Inter` and `Vazirmatn` for documentation and analytics.
-
----
-
-## 📡 RESTful API Reference
-
-### 1. Ingest Prometheus Metrics
-```bash
-curl -X POST https://api.pulsecore.internal/api/v1/metrics \
-  -H "Content-Type: text/plain; version=0.0.4" \
-  -H "X-API-Key: pk_live_8849201948" \
-  --data-binary @- <<EOF
-# HELP http_requests_total Total number of HTTP requests.
-# TYPE http_requests_total counter
-http_requests_total{method="POST",handler="/checkout",status="200"} 18402 1727394800000
-http_requests_total{method="POST",handler="/checkout",status="504"} 48 1727394800000
-EOF
-```
-**Response (202 Accepted):**
-```json
-{
-  "status": "success",
-  "ingested_points": 2,
-  "execution_time_us": 42
-}
-```
-
-### 2. Execute PromQL Range Query
-```bash
-curl -X POST https://api.pulsecore.internal/api/v1/query_range \
-  -H "Authorization: Bearer <JWT_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "rate(http_requests_total{status=~\"5..\"}[2m])",
-    "start": 1727394000,
-    "end": 1727397600,
-    "step": "15s"
-  }'
-```
-
-### 3. Acknowledge Active Incident
-```bash
-curl -X POST https://api.pulsecore.internal/api/v1/alerts/inc-99412/ack \
-  -H "Authorization: Bearer <JWT_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "assignee": "ali.kheiri",
-    "silence_minutes": 30,
-    "notes": "Restarting Redis replica pool to clear connection deadlock."
-  }'
-```
+| \`--canvas-dark\` | \`#090D16\` | Deep obsidian backdrop; minimizes OLED eye strain |
+| \`--panel-surface\` | \`#0B0F19\` | Frosted glass card surface with rgba(30, 41, 59, 0.8) borders |
+| \`--alert-crimson\` | \`#EF4444\` | High-visibility neon red with radar pulse animation for Critical alerts |
+| \`--warning-amber\` | \`#F59E0B\` | Warm amber for approaching thresholds and pending evaluations |
+| \`--success-emerald\` | \`#10B981\` | Vibrant emerald for 99.98% SLA and healthy status indicators |
+| \`--brand-indigo\` | \`#6366F1\` | Primary telemetry line chart curves and focus states |
+| \`--trace-cyan\` | \`#06B6D4\` | Microsecond OTLP span bars and waterfall timelines |
 
 ---
 
 ## 🚀 Quickstart (Docker Compose)
 
-Clone the repository and launch the full-stack PulseCore observability suite with a single command:
-
-```bash
+\`\`\`bash
 # 1. Clone repository
 git clone https://github.com/your-username/pulsecore-observability.git
 cd pulsecore-observability
@@ -228,59 +161,7 @@ cd pulsecore-observability
 # 2. Launch TSDB, Ingestion Gateway, and Cockpit
 docker compose up -d
 
-# 3. Verify services
-docker compose ps
-```
-
-Open your browser at `http://localhost:3000` to access the live cockpit!
-
-```yaml
-# docker-compose.yml snippet
-version: '3.8'
-services:
-  pulsecore-tsdb:
-    image: pulsecore/tsdb-engine:latest
-    ports:
-      - "9090:9090"
-      - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP
-    environment:
-      - GORILLA_CHUNK_SIZE_HOURS=2
-      - RETENTION_RAW_DAYS=7
-      - RETENTION_ROLLUP_DAYS=90
-    volumes:
-      - tsdb_data:/data
-
-  pulsecore-cockpit:
-    image: pulsecore/web-cockpit:latest
-    ports:
-      - "3000:3000"
-    environment:
-      - TSDB_ENDPOINT=http://pulsecore-tsdb:9090
-```
-
----
-
-## 📈 Benchmarks
-
-Simulated performance on an 8-Core AMD EPYC 7763 server with 32GB RAM:
-
-- **Ingestion Write Rate:** `1,540,000` points/second sustained (In-Memory RingBuffer).
-- **Gorilla Compression Ratio:** `11.68x` (Raw: 16B ➔ Compressed: 1.37B/sample).
-- **P99 PromQL Evaluation:** `3.8ms` for 50,000 points over a 15-minute sliding window.
-- **Log Stream Search:** Filtered 5,000,000 structured log lines in `42ms`.
-- **Alert Evaluation Cycle:** Evaluated 1,200 active rules across 250,000 series in `140ms`.
-
----
-
-## 🗺️ Project Roadmap
-
-- [x] **Phase 1 (MVP):** In-Memory TSDB, Gorilla Compression, PromQL parser, 4-stage Alert State Machine.
-- [x] **Phase 2 (Observability Suite):** Live structured logs, OTLP tracing waterfall, microservice dependency map, 90-day status page.
-- [ ] **Phase 3 (Enterprise Scale):** Distributed Raft consensus sharding, ClickHouse storage tiering, SAML/Okta SSO, ML anomaly detection.
-
----
-
-## 📄 License
-This project is open-source and licensed under the **Apache License 2.0**.
-Made with ⚡ for high-reliability site engineering.
+# 3. Access web dashboard
+open http://localhost:3000
+\`\`\`
+`;

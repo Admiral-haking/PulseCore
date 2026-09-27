@@ -1,0 +1,7 @@
+{
+  "name": "PulseCore Observability Platform",
+  "description": "سیستم مانیتورینگ، سری‌های زمانی و مدیریت هشدار سبک و پیشرفته (Self-Hosted Datadog + Grafana + PagerDuty alternative)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
